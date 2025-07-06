@@ -15,7 +15,7 @@ USE_ARCHIVES=true
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 log() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -47,7 +47,7 @@ create_directories() {
 install_dependencies() {
     log "Installation des dépendances..."
     apt update
-    apt install -y apache2 mariadb-server php8.3 php8.3-gd php8.3-zip php8.3-curl php8.3-xml php8.3-mysql php8.3-mbstring php8.3-json php8.3-ldap php8.3-imap php8.3-intl php8.3-soap php8.3-cli unzip openssl apache2-utils
+    apt install -y apache2 libapache2-mod-php mariadb-server php8.3 php8.3-gd php8.3-zip php8.3-curl php8.3-xml php8.3-mysql php8.3-mbstring php8.3-json php8.3-ldap php8.3-imap php8.3-intl php8.3-soap php8.3-cli unzip openssl apache2-utils
 
     sleep 3
 
@@ -57,7 +57,7 @@ install_dependencies() {
     if [[ ! -f "/usr/sbin/a2enmod" ]]; then
         error "Apache n'est pas correctement installé - fichier a2enmod introuvable"
         log "Tentative de réinstallation d'Apache..."
-        apt install --reinstall -y apache2
+        apt install --reinstall -y apache2 libapache2-mod-php
         sleep 2
         if [[ ! -f "/usr/sbin/a2enmod" ]]; then
             error "Impossible d'installer Apache correctement"
@@ -65,9 +65,12 @@ install_dependencies() {
         fi
     fi
 
+    /usr/sbin/a2dismod mpm_event
+    /usr/sbin/a2enmod mpm_prefork
     /usr/sbin/a2enmod ssl
     /usr/sbin/a2enmod rewrite
     /usr/sbin/a2enmod headers
+    /usr/sbin/a2enmod php8.2
 
     systemctl enable apache2
     systemctl enable mariadb
@@ -230,7 +233,6 @@ configure_apache() {
     ServerName $DOMAIN_DOLIBARR
     DocumentRoot $WWW_DIR/dolibarr/htdocs
 
-    # Redirection vers HTTPS
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
@@ -240,19 +242,16 @@ configure_apache() {
     ServerName $DOMAIN_DOLIBARR
     DocumentRoot $WWW_DIR/dolibarr/htdocs
 
-    # Configuration SSL
     SSLEngine on
     SSLCertificateFile $CERTS_DIR/server/dolibarr.crt
     SSLCertificateKeyFile $CERTS_DIR/server/dolibarr.key
     SSLCACertificateFile $CERTS_DIR/ca/ca.crt
 
-    # Configuration PHP
     <Directory $WWW_DIR/dolibarr/htdocs>
         AllowOverride All
         Require all granted
     </Directory>
 
-    # Logs
     ErrorLog \${APACHE_LOG_DIR}/dolibarr_error.log
     CustomLog \${APACHE_LOG_DIR}/dolibarr_access.log combined
 </VirtualHost>
@@ -261,9 +260,8 @@ EOF
     cat > "$SITES_DIR/glpi.conf" << EOF
 <VirtualHost *:80>
     ServerName $DOMAIN_GLPI
-    DocumentRoot $WWW_DIR/glpi/public
+    DocumentRoot $WWW_DIR/glpi
 
-    # Redirection vers HTTPS
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
@@ -271,21 +269,18 @@ EOF
 
 <VirtualHost *:443>
     ServerName $DOMAIN_GLPI
-    DocumentRoot $WWW_DIR/glpi/public
+    DocumentRoot $WWW_DIR/glpi
 
-    # Configuration SSL
     SSLEngine on
     SSLCertificateFile $CERTS_DIR/server/glpi.crt
     SSLCertificateKeyFile $CERTS_DIR/server/glpi.key
     SSLCACertificateFile $CERTS_DIR/ca/ca.crt
 
-    # Configuration PHP
-    <Directory $WWW_DIR/glpi/public>
+    <Directory $WWW_DIR/glpi>
         AllowOverride All
         Require all granted
     </Directory>
 
-    # Logs
     ErrorLog \${APACHE_LOG_DIR}/glpi_error.log
     CustomLog \${APACHE_LOG_DIR}/glpi_access.log combined
 </VirtualHost>
@@ -310,7 +305,6 @@ configure_basic_auth() {
     ServerAdmin webmaster@localhost
     DocumentRoot /var/www/html
 
-    # Authentification basique
     <Directory /var/www/html>
         AuthType Basic
         AuthName "Accès Restreint - 4IW Lab"
