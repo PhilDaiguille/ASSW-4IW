@@ -47,7 +47,7 @@ create_directories() {
 install_dependencies() {
     log "Installation des dépendances..."
     apt update
-    apt install -y apache2 libapache2-mod-php mariadb-server php8.3 php8.3-gd php8.3-zip php8.3-curl php8.3-xml php8.3-mysql php8.3-mbstring php8.3-json php8.3-ldap php8.3-imap php8.3-intl php8.3-soap php8.3-cli unzip openssl apache2-utils
+    apt install -y apache2 libapache2-mod-php mariadb-server php php-gd php-zip php-curl php-xml php-mysql php-mbstring php-json php-ldap php-imap php-intl php-soap php-cli unzip openssl apache2-utils
 
     sleep 3
 
