@@ -10,6 +10,7 @@ WWW_DIR="/var/www"
 CERTS_DIR="/home/webadm/ASSW-4IW/certs"
 ARCHIVES_DIR="/home/webadm/ASSW-4IW/archives"
 AUTH_DIR="/home/webadm/ASSW-4IW/auth"
+USE_ARCHIVES=true
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -38,13 +39,7 @@ check_root() {
 create_directories() {
     log "Création des répertoires nécessaires..."
 
-    mkdir -p "$CERTS_DIR/ca"
-    mkdir -p "$CERTS_DIR/server"
-    mkdir -p "$CERTS_DIR/clients"
-
-    mkdir -p "$AUTH_DIR"
-
-    mkdir -p "$ARCHIVES_DIR"
+    mkdir -p "$CERTS_DIR/ca $CERTS_DIR/server $CERTS_DIR/clients $AUTH_DIR $ARCHIVES_DIR"
 
     log "Répertoires créés avec succès"
 }
@@ -52,7 +47,7 @@ create_directories() {
 install_dependencies() {
     log "Installation des dépendances..."
     apt update
-    apt install -y apache2 mariadb-server php php-gd php-zip php-curl php-xml php-mysql php-mbstring php-json php-ldap php-imap php-intl php-soap php-cli unzip openssl apache2-utils
+    apt install -y apache2 mariadb-server php8.3 php8.3-gd php8.3-zip php8.3-curl php8.3-xml php8.3-mysql php8.3-mbstring php8.3-json php8.3-ldap php8.3-imap php8.3-intl php8.3-soap php8.3-cli unzip openssl apache2-utils
 
     sleep 3
 
@@ -118,11 +113,8 @@ setup_database() {
 install_dolibarr() {
     log "Installation de Dolibarr..."
 
-    log "Vérification de l'archive locale : $ARCHIVES_DIR/dolibarr-19.0.3.tgz"
-    ls -la "$ARCHIVES_DIR/" || log "Erreur : impossible de lister le dossier archives"
-
-    if [[ -f "$ARCHIVES_DIR/dolibarr-19.0.3.tgz" ]]; then
-        log "Utilisation de l'archive locale Dolibarr"
+    if [[ "$USE_ARCHIVES" == true && -f "$ARCHIVES_DIR/dolibarr-19.0.3.tgz" ]]; then
+        log "Utilisation de l'archive locale de Dolibarr"
         cd /tmp
         cp "$ARCHIVES_DIR/dolibarr-19.0.3.tgz" .
         tar -xzf dolibarr-19.0.3.tgz
@@ -158,11 +150,8 @@ install_dolibarr() {
 install_glpi() {
     log "Installation de GLPI..."
 
-    log "Vérification de l'archive locale : $ARCHIVES_DIR/glpi-10.0.18.tgz"
-    ls -la "$ARCHIVES_DIR/" || log "Erreur : impossible de lister le dossier archives"
-
-    if [[ -f "$ARCHIVES_DIR/glpi-10.0.18.tgz" ]]; then
-        log "Utilisation de l'archive locale GLPI"
+    if [[ "$USE_ARCHIVES" == true && -f "$ARCHIVES_DIR/glpi-10.0.18.tgz" ]]; then
+        log "Utilisation de l'archive locale de GLPI"
         cd /tmp
         cp "$ARCHIVES_DIR/glpi-10.0.18.tgz" .
         tar -xzf glpi-10.0.18.tgz
